@@ -158,6 +158,7 @@
 <script>
 import { getPagedGoodsList } from '@/api/mall.js';
 import SearchInput from '@/views/mall/SearchInput';
+import { TransitionGroupStub } from '@vue/test-utils';
 export default {
     data() {
         return {
@@ -302,9 +303,70 @@ export default {
         SearchInput,
     },
     methods: {
-        searchresult(pagination, goodsList, goodsMatrix) {
-            console.log(pagination, goodsList, goodsMatrix);
+        renderPageWithGoodsPageData(jsonResult) {
+            console.log(jsonResult.data);
+            this.pagination.total = jsonResult.data.total;
+
+            // store page goods list
+            this.goodsList = jsonResult.data.pageData;
+
+            // #region convert list to matrix (4 each row)
+            function convertListToMatrix(list) {
+                let matrix = [];
+                let rowList = [];
+                list.forEach((value, index, arr) => {
+                    if (index % 4 === 0) {
+                        rowList = [];
+                        rowList.push(list[index]);
+                        matrix.push(rowList);
+                    } else {
+                        rowList.push(list[index]);
+                    }
+                });
+                return matrix;
+            }
+            // #endregion
+
+            this.goodsMatrix = convertListToMatrix(this.goodsList);
+
+            // #region put goods imgs to page
+            this.renderGoodsImg();
+            // #endregion
         },
+        /**
+         * render the goods img from this.goodsList
+         */
+        renderGoodsImg() {
+            this.$nextTick(() => {
+                // every goods-id was attached to the div of corresponding goods
+                $('[goods-id]').each((index, domEle) => {
+                    let $dom = $(domEle);
+                    let goods_id = $dom.attr('goods-id');
+                    let goods = this.goodsList.find(
+                        (goods) => goods.id == goods_id
+                    );
+                    let base64Pic = goods.picList[0].base64Str;
+                    let $img = $(`[goods-id=${goods_id}] img`);
+                    $img.attr('src', `data:image/png;base64,${base64Pic}`);
+                });
+            });
+        },
+        /**
+         * comp search-input emit
+         */
+        searchResult(pagination, goodsList, goodsMatrix) {
+            // debugger;
+            console.log(pagination, goodsList, goodsMatrix);
+            this.pagination.total = pagination.total;
+            // tihs.pagination.pageNo = pagination.pageNo;
+            // this.pagination.pageSize = pagination.pageSize;
+
+            this.goodsList = goodsList;
+            this.goodsMatrix = goodsMatrix;
+
+            this.renderGoodsImg();
+        },
+
         /**
          * 展示对应门类的商品
          */
@@ -324,61 +386,7 @@ export default {
          */
         getPagedGoodsList(pageSize, pageNo) {
             getPagedGoodsList(pageSize, pageNo).then((jsonResult) => {
-                console.log(jsonResult.data);
-                this.pagination.total = jsonResult.data.total;
-                this.goodsList = jsonResult.data.pageData;
-
-                this.goodsMatrix = [];
-                let rowList = [];
-                this.goodsList.forEach((value, index, arr) => {
-                    console.log('index:', index);
-                    if (index % 4 === 0) {
-                        console.log(
-                            'new row in matrix, row no:' + parseInt(index / 4)
-                        );
-                        rowList = [];
-                        rowList.push(this.goodsList[index]);
-                        this.goodsMatrix.push(rowList);
-
-                        console.log(
-                            'matrix:',
-                            this.goodsMatrix,
-                            'rowlist:',
-                            rowList
-                        );
-                    } else {
-                        console.log(
-                            'new goods in row, row no:' + parseInt(index / 4)
-                        );
-                        rowList.push(this.goodsList[index]);
-                    }
-                });
-
-                console.log('goodsMatrix:', this.goodsMatrix);
-
-                this.$nextTick(() => {
-                    console.log($('[goods-id]'));
-                    $('[goods-id]').each((index, domEle) => {
-                        console.log('dom:', domEle);
-                        let $dom = $(domEle);
-                        let goods_id = $dom.attr('goods-id');
-                        let goods = this.goodsList.find(
-                            (goods) => goods.id == goods_id
-                        );
-                        let base64Pic = goods.picList[0].base64Str;
-                        let $img = $(`[goods-id=${goods_id}] img`);
-                        $img.attr('src', `data:image/png;base64,${base64Pic}`);
-                    });
-                });
-
-                // this.tableData.forEach((value) => {
-                //     let map = {
-                //         '-1': '待审批',
-                //         0: '不通过',
-                //         1: '通过',
-                //     };
-                //     value.permission = map[value.permission];
-                // });
+                this.renderPageWithGoodsPageData(jsonResult);
             });
         },
 
