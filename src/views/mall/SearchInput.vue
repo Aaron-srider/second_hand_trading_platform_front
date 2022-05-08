@@ -65,7 +65,8 @@ export default {
                         'searchResultComing',
                         pagination,
                         goodsList,
-                        goodsMatrix
+                        goodsMatrix,
+                        this.goodsName
                     );
                 }
             );

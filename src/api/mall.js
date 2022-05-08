@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-export function getPagedGoodsList(pageSize, pageNo, goodsName) {
+export function getPagedGoodsList(pageSize, pageNo, goodsName, sortPolicy) {
     return request({
         url: '/goods',
         method: 'get',
@@ -8,6 +8,7 @@ export function getPagedGoodsList(pageSize, pageNo, goodsName) {
             pageNo,
             pageSize,
             goodsName,
+            sortPolicy
         },
     });
 }
