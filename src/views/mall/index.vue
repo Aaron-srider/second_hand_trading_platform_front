@@ -54,7 +54,10 @@
                 >
                     <el-row type="flex">
                         <el-col :span="10">
-                            <el-radio-group v-model="sortType">
+                            <el-radio-group
+                                v-model="sortType"
+                                @change="sortGoods"
+                            >
                                 <el-radio-button
                                     label="好评度"
                                 ></el-radio-button>
@@ -75,7 +78,6 @@
                             "
                             ><el-pagination
                                 :pager-count="3"
-                                @size-change="handleSizeChange"
                                 @current-change="handleCurrentChange"
                                 :current-page="pagination.pageNo"
                                 :page-size="pagination.pageSize"
@@ -158,7 +160,6 @@
 <script>
 import { getPagedGoodsList } from '@/api/mall.js';
 import SearchInput from '@/views/mall/SearchInput';
-import { TransitionGroupStub } from '@vue/test-utils';
 export default {
     data() {
         return {
@@ -270,6 +271,11 @@ export default {
 
             sortType: '好评度',
 
+            /**
+             * 保存上次的搜索关键字
+             */
+            searchGoodsName: '',
+
             pagination: {
                 /**
                  * 总数
@@ -294,15 +300,48 @@ export default {
      * 页面加载自动刷新（初始页面：1，初始页面大小：10）
      */
     created() {
-        this.getPagedGoodsList(
-            this.pagination.pageSize,
-            this.pagination.pageNo
-        );
+        this.doQueryGoodsPage();
     },
     components: {
         SearchInput,
     },
     methods: {
+        fetchGoodsPage(pageSize, pageNo, searchGoodsName, sortPolicy) {
+            getPagedGoodsList(
+                pageSize,
+                pageNo,
+                searchGoodsName,
+                sortPolicy
+            ).then((jsonResult) => {
+                this.renderPageWithGoodsPageData(jsonResult);
+            });
+        },
+
+        doQueryGoodsPage() {
+            let map = {
+                好评度: 'favour',
+                销量: 'sales',
+                价格升序: 'price-asc',
+                价格降序: 'price-desc',
+            };
+            let sortPolicy = map[this.sortType];
+            this.fetchGoodsPage(
+                this.pagination.pageSize,
+                this.pagination.pageNo,
+                this.searchGoodsName,
+                sortPolicy
+            );
+        },
+
+        sortGoods() {
+            this.pagination.pageNo = 1;
+            this.doQueryGoodsPage();
+        },
+
+        doFlip() {
+            this.doQueryGoodsPage();
+        },
+
         renderPageWithGoodsPageData(jsonResult) {
             console.log(jsonResult.data);
             this.pagination.total = jsonResult.data.total;
@@ -354,7 +393,7 @@ export default {
         /**
          * comp search-input emit
          */
-        searchResult(pagination, goodsList, goodsMatrix) {
+        searchResult(pagination, goodsList, goodsMatrix, searchGoodsName) {
             // debugger;
             console.log(pagination, goodsList, goodsMatrix);
             this.pagination.total = pagination.total;
@@ -363,6 +402,7 @@ export default {
 
             this.goodsList = goodsList;
             this.goodsMatrix = goodsMatrix;
+            this.searchGoodsName = searchGoodsName;
 
             this.renderGoodsImg();
         },
@@ -390,17 +430,17 @@ export default {
             });
         },
 
-        /**
-         * 更改页面大小时绑定到data:pageSize，并拉去更新后的页面
-         * @param {int} pageSize 更新后的页面大小
-         */
-        handleSizeChange(pageSize) {
-            this.pagination.pageSize = pageSize;
-            this.getPagedRegistApplication(
-                this.pagination.pageSize,
-                this.pagination.pageNo
-            );
-        },
+        // /**
+        //  * 更改页面大小时绑定到data:pageSize，并拉去更新后的页面
+        //  * @param {int} pageSize 更新后的页面大小
+        //  */
+        // handleSizeChange(pageSize) {
+        //     this.pagination.pageSize = pageSize;
+        //     this.getPagedRegistApplication(
+        //         this.pagination.pageSize,
+        //         this.pagination.pageNo
+        //     );
+        // },
 
         /**
          * 更改页面大小时绑定到data:pageNo，并拉去更新后的页面
@@ -408,10 +448,11 @@ export default {
          */
         handleCurrentChange(pageNo) {
             this.pagination.pageNo = pageNo;
-            this.getPagedRegistApplication(
-                this.pagination.pageSize,
-                this.pagination.pageNo
-            );
+            this.doFlip();
+            // this.getPagedRegistApplication(
+            //     this.pagination.pageSize,
+            //     this.pagination.pageNo
+            // );
         },
 
         // #endregion
