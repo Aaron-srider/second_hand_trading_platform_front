@@ -110,6 +110,21 @@ export const constantRoutes = [
     },
 
     {
+        path: '/myInfo',
+        component: Layout,
+        redirect: '/myInfo/shoppingHistory',
+        name: 'myInfo',
+        meta: { title: 'myInfo', icon: 'el-icon-s-help' },
+        children: [
+            {
+                path: 'shoppingHistory',
+                name: 'shoppingHistory',
+                component: () => import('@/views/myInfo/shoppingHistory/index'),
+                meta: { title: 'shoppingHistory', icon: 'table' },
+            },
+        ],
+    },
+    {
         path: '/example',
         component: Layout,
         redirect: '/example/table',
