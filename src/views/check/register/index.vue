@@ -15,18 +15,25 @@
                     <el-table-column prop="bankNo" label="银行卡号">
                     </el-table-column>
 
-                    <el-table-column prop="permission" label="状态">
+                    <el-table-column prop="permissionText" label="状态">
                     </el-table-column>
 
-                    <el-table-column label="操作">
+                    <el-table-column label="操作" width="250">
                         <template slot-scope="scope">
                             <el-button
-                                :id="'passBtn' + scope.row.id"
-                                :status="scope.row.permission"
                                 type="primary"
-                                class="passBtn"
+                                :disabled="scope.row.permission != -1"
                                 @click="registerPass(scope.row.id)"
+                                size="small"
                                 >通过</el-button
+                            >
+
+                            <el-button
+                                type="danger"
+                                :disabled="scope.row.permission != -1"
+                                @click="registerFail(scope.row.id)"
+                                size="small"
+                                >不通过</el-button
                             >
                         </template>
                     </el-table-column>
@@ -64,7 +71,11 @@ function refreshBtnStatus() {
 
 // #endregion
 
-import { getPagedRegistApplication, registerPass } from '@/api/application.js';
+import {
+    getPagedRegistApplication,
+    registerPass,
+    registerFail,
+} from '@/api/application.js';
 import { unwrapErrorMessage, processCatch } from '@/utils';
 export default {
     methods: {
@@ -92,7 +103,7 @@ export default {
                         0: '不通过',
                         1: '通过',
                     };
-                    value.permission = map[value.permission];
+                    value.permissionText = map[value.permission];
                 });
 
                 this.$nextTick((_) => {
@@ -128,6 +139,16 @@ export default {
 
         registerPass(registerApplicationId) {
             registerPass(registerApplicationId)
+                .then((jsonObject) => {
+                    this.refreshCurrentPage();
+                })
+                .catch((error) => {
+                    processCatch(error);
+                });
+        },
+
+        registerFail(registerApplicationId) {
+            registerFail(registerApplicationId)
                 .then((jsonObject) => {
                     this.refreshCurrentPage();
                 })

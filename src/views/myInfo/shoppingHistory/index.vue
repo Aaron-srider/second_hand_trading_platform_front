@@ -8,8 +8,7 @@
                 @select="handleSelect"
             >
                 <el-menu-item index="1">所有订单</el-menu-item>
-                <el-menu-item index="2">待收货</el-menu-item>
-                <el-menu-item index="3">已完成</el-menu-item>
+
                 <!-- <el-menu-item index="4"
                     ><a href="https://www.ele.me" target="_blank"
                         >订单管理</a

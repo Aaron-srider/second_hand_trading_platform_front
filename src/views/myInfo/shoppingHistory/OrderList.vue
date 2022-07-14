@@ -116,36 +116,231 @@
                     >
                     <!-- op -->
                     <el-table-column label="" width="">
-                        <el-button size="small"
-                            >评价</el-button
-                        ></el-table-column
-                    >
+                        <el-button
+                            @click="viewComment(order.id)"
+                            v-if="order.orderStatusId == 6"
+                            size="small"
+                        >
+                            查看评价
+                        </el-button>
+                        <el-button
+                            @click="openCommentWindow(order.goodsId, order.id)"
+                            v-if="order.orderStatusId == 1"
+                            size="small"
+                        >
+                            评价
+                        </el-button>
+                        <el-button
+                            @click="receiveGoods(order.id)"
+                            v-if="order.orderStatusId == 5"
+                            size="small"
+                            >确认收货</el-button
+                        >
+                    </el-table-column>
                 </el-table>
             </div>
-        </el-main></el-container
-    >
+            <!-- 评论框 -->
+            <el-dialog
+                title="评价商品"
+                :visible.sync="dialogVisible"
+                width="50%"
+                :before-close="handleClose"
+            >
+                <div class="flex border">
+                    <div style="width: 50%" class="">
+                        <div class="mg8">
+                            <div>评价商品</div>
+                            <textarea
+                                placeholder="输入对商品的评价"
+                                name=""
+                                v-model="goodsComment"
+                                :id="`goodsComment-${commentOrderId}`"
+                                :disabled="commentInputDisabled"
+                                cols="30"
+                                rows="10"
+                            />
+                        </div>
+
+                        <div class="mg8">
+                            <div>评价商家</div>
+                            <textarea
+                                placeholder="输入对商家的评价"
+                                name=""
+                                v-model="storeComment"
+                                :id="`storeComment-${commentOrderId}`"
+                                :disabled="commentInputDisabled"
+                                cols="30"
+                                rows="10"
+                            />
+                        </div>
+                    </div>
+                    <div style="width: 50%" class="flex column flex-center">
+                        <div>
+                            商品星级
+                            <el-rate
+                                :id="`goodsStar-${commentOrderId}`"
+                                v-model="goodsStar"
+                                :disabled="commentInputDisabled"
+                            ></el-rate>
+                        </div>
+                        <div style="border: 0.5px solid; width: 50%"></div>
+                        <div>
+                            商家星级
+                            <el-rate
+                                :id="`storeStar-${commentOrderId}`"
+                                v-model="storeStar"
+                                :disabled="commentInputDisabled"
+                            ></el-rate>
+                        </div>
+                    </div>
+                </div>
+
+                <div slot="footer" class="dialog-footer">
+                    <el-button
+                        @click="dialogVisible = false"
+                        v-if="!commentInputDisabled"
+                        >取消</el-button
+                    >
+                    <el-button
+                        type="primary"
+                        @click="submitComment"
+                        v-if="!commentInputDisabled"
+                        >提交</el-button
+                    >
+                </div>
+            </el-dialog>
+        </el-main>
+    </el-container>
 </template>
 
 <script>
-import { getPagedOrderList } from '@/api/order.js';
+import { getPagedOrderList, confirmReceiveGoods } from '@/api/order.js';
+import {
+    submitCommit,
+    getOrderCommentByUserIdAndOrderId,
+} from '@/api/comment.js';
+
+let vue;
 export default {
     created() {
+        vue = this;
         this.getPageOrderList();
     },
     methods: {
+        viewComment(orderId) {
+            let userId = this.$store.state.user.userId;
+            console.log(orderId);
+            this.commentOrderId = orderId;
+            getOrderCommentByUserIdAndOrderId({ userId, orderId }).then(
+                (jsonResult) => {
+                    this.commentInputDisabled = true;
+                    this.goodsComment = jsonResult.data.goodsComment;
+                    this.storeComment = jsonResult.data.storeComment;
+                    if (this.storeComment == '') {
+                        this.storeComment = '未填写';
+                    }
+
+                    if (this.goodsComment == '') {
+                        this.goodsComment = '未填写';
+                    }
+                    this.goodsStar = jsonResult.data.goodsStar;
+                    this.storeStar = jsonResult.data.storeStar;
+                    this.dialogVisible = true;
+                }
+            );
+            // this.dialogVisible = true;
+        },
+        clearCommentInput() {
+            this.goodsComment = '';
+            this.storeComment = '';
+            this.goodsStar = 5;
+            this.storeStar = 5;
+        },
+        submitComment() {
+            let comment = {
+                userId: this.$store.state.user.userId,
+                goodsId: this.commentGoodsId,
+                orderId: this.commentOrderId,
+                goodsComment: this.goodsComment,
+                storeComment: this.storeComment,
+                goodsStar: this.goodsStar,
+                storeStar: this.storeStar,
+            };
+            console.log(comment);
+            submitCommit(comment).then((jsonResult) => {
+                console.log(jsonResult);
+                if (jsonResult.code == 200) {
+                    this.dialogVisible = false;
+                    let thisOrder = this.orderList.find(function (order) {
+                        return order.id == vue.commentOrderId;
+                    });
+                    thisOrder.orderStatusId = 6;
+                    thisOrder.order_status = '已评价';
+                }
+
+                if (jsonResult.code == 508) {
+                    this.$message({
+                        type: 'warning',
+                        message: '请勿重复评价',
+                    });
+                }
+            });
+        },
+        commentValidate() {
+            if (
+                this.goodsComment &&
+                this.storeComment &&
+                this.goodsStar &&
+                this.storeCStar
+            ) {
+                return true;
+            }
+            return false;
+        },
+        handleClose(done) {
+            this.clearCommentInput();
+            done();
+        },
+        openCommentWindow(commentGoodsId, commentOrderId) {
+            this.commentInputDisabled = false;
+            this.commentGoodsId = commentGoodsId;
+            this.commentOrderId = commentOrderId;
+            this.dialogVisible = true;
+        },
+        receiveGoods(orderId) {
+            confirmReceiveGoods(orderId).then((jsonResult) => {
+                console.log(jsonResult);
+                if (jsonResult.code == 200) {
+                    let thisOrder = this.orderList.find(function (order) {
+                        return order.id == orderId;
+                    });
+                    thisOrder.orderStatusId = 1;
+                    thisOrder.order_status = '已关闭';
+                }
+
+                if (jsonResult.code == 506) {
+                    this.$message({
+                        message: '此订单数据异常',
+                        type: 'error',
+                    });
+                }
+            });
+        },
         fetchPageOrderList({ pageNo, pageSize, customerId }) {
             getPagedOrderList(pageNo, pageSize, customerId).then(
                 (jsonResult) => {
                     this.orderList = jsonResult.data.pageData;
                     this.pagination.total = jsonResult.data.total;
+                    console.log(this.orderList);
                 }
             );
         },
         getPageOrderList() {
+            console.log(this.$store.state.user.userId);
             this.fetchPageOrderList({
                 pageNo: this.pagination.pageNo,
                 pageSize: this.pagination.pageSize,
-                customerId: 10,
+                customerId: this.$store.state.user.userId,
             });
         },
         hideWhite(string) {
@@ -160,15 +355,24 @@ export default {
             return 'border-right: 1px solid #ebeef5;';
         },
         handleCurrentChange(pageNo) {
+            console.log(this.$store.state.user.userId);
             this.fetchPageOrderList({
                 pageNo,
                 pageSize: this.pagination.pageSize,
-                customerId: 10,
+                customerId: this.$store.state.user.userId,
             });
         },
     },
     data() {
         return {
+            commentInputDisabled: false,
+            commentOrderId: undefined,
+            commentGoodsId: undefined,
+            goodsComment: '',
+            storeComment: '',
+            goodsStar: 5,
+            storeStar: 5,
+            dialogVisible: false,
             pagination: {
                 /**
                  * 总数
@@ -221,14 +425,15 @@ export default {
 </script>
 
 <style scoped>
+@import '../../../styles/common-style.css';
 .row-col {
     border-right: 1px solid #daf3ff;
     height: 100%;
 }
 
-/deep/ .el-table__empty-block {
+/* /deep/ .el-table__empty-block {
     display: none;
-}
+} */
 
 /* .header-cell-border {
     border-right: 1px solid #ebeef5;

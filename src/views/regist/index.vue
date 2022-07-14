@@ -14,7 +14,8 @@
             <div style="margin: auto; width: 30%">
                 <div>
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">姓名:</div>
                             <el-input
                                 v-model="name"
                                 placeholder="姓名"
@@ -25,7 +26,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">手机号:</div>
                             <el-input
                                 v-model="phone"
                                 placeholder="手机号"
@@ -36,7 +38,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">邮箱:</div>
                             <el-input
                                 v-model="email"
                                 placeholder="邮箱"
@@ -47,7 +50,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">密码:</div>
                             <el-input
                                 type="password"
                                 v-model="password"
@@ -59,7 +63,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">确认密码:</div>
                             <el-input
                                 type="password"
                                 v-model="rePassword"
@@ -71,7 +76,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">城市:</div>
                             <el-input
                                 v-model="city"
                                 placeholder="城市"
@@ -82,7 +88,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">性别:</div>
                             <el-select
                                 style="width: 100%"
                                 v-model="sex"
@@ -95,7 +102,8 @@
                     </el-row>
 
                     <el-row>
-                        <el-col class="input-margin">
+                        <el-col class="input-margin flex align-center">
+                            <div style="width: 100px">银行账号:</div>
                             <el-input
                                 v-model="bank_account"
                                 placeholder="银行账号(16位)"
@@ -250,10 +258,16 @@ function validateRgistInfo(
         ],
         [
             () => {
-                vue.$message.error('密码长度应该在6~12之间');
+                // vue.$message({
+                //     message: '密码长度应该在6~12之间',
+                //     type: 'error',
+                // });
             },
             () => {
-                vue.$message.error('密码只能包含英文字母和数字');
+                // vue.$message({
+                //     message: '密码只能包含英文字母和数字',
+                //     type: 'error',
+                // });
             },
         ]
     );
@@ -308,14 +322,14 @@ import { wrapErrorMessage, unwrapErrorMessage } from '@/utils/index';
 export default {
     data() {
         return {
-            name: '文超',
-            phone: '17163497537',
-            email: 'wc@qq.com',
-            city: '赣州',
-            sex: '1',
-            password: '123456',
-            rePassword: '123456',
-            bank_account: '1234567890123456',
+            name: '',
+            phone: '',
+            email: '',
+            city: '',
+            sex: '',
+            password: '',
+            rePassword: '',
+            bank_account: '',
             verify_code: '',
 
             validate_rst: {},
@@ -371,7 +385,10 @@ export default {
                 }
             } catch (error) {
                 if (!(error.message === 'null')) {
-                    this.$message.error(error.message);
+                    this.$message({
+                        type: 'error',
+                        message: error.message,
+                    });
                 }
 
                 return;
@@ -382,8 +399,11 @@ export default {
             verifyCode(this.verify_code)
                 .then((jsonResult) => {
                     if (jsonResult.code === 501) {
-                        console.log('验证码错误');
-                        throw Error(wrapErrorMessage(jsonResult));
+                        this.$message({
+                            type: 'error',
+                            message: jsonResult.message || jsonResult.detail,
+                        });
+                        return Promise.reject();
                     }
 
                     return register(
@@ -399,11 +419,19 @@ export default {
                 .then((jsonResult) => {
                     if (jsonResult.code === 500) {
                         console.log('后端错误');
-                        throw Error(wrapErrorMessage(jsonResult));
+                        this.$message({
+                            type: 'error',
+                            message: jsonResult.message || jsonResult.detail,
+                        });
+                        return Promise.reject();
                     }
                     if (jsonResult.code === 503) {
-                        console.log('手机号已注册');
-                        throw Error(wrapErrorMessage(jsonResult));
+                        console.log('邮箱已注册');
+                        this.$message({
+                            type: 'error',
+                            message: jsonResult.message || jsonResult.detail,
+                        });
+                        return Promise.reject();
                     }
 
                     this.$message.success('注册申请提交成功，请等待管理员审核');
@@ -411,9 +439,6 @@ export default {
                         path: '/login',
                     });
                     this.reloadImage();
-                })
-                .catch((error) => {
-                    processCatch(error);
                 });
         },
         reloadImage() {
@@ -425,3 +450,7 @@ export default {
     },
 };
 </script>
+
+<style>
+@import '../../styles/common-style.css'; ;
+</style>

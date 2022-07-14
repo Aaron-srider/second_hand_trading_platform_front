@@ -19,7 +19,7 @@
                 <el-input
                     ref="username"
                     v-model="loginForm.username"
-                    placeholder="Username"
+                    placeholder="Email"
                     name="username"
                     type="text"
                     tabindex="1"
@@ -60,23 +60,22 @@
             >
 
             <div class="tips">
-                <span style="margin-right: 20px">username: admin</span>
-                <span> password: any</span>
-                <span> 新用户注册</span>
+                <a href="#" @click="toRegistPage">新用户注册</a>
             </div>
         </el-form>
     </div>
 </template>
 
 <script>
-import { validUsername } from "@/utils/validate";
-
+import { login } from '@/api/user';
+import { validUsername } from '@/utils/validate';
+import { constantRoutes } from '@/router/index.js';
 export default {
-    name: "Login",
+    name: 'Login',
     data() {
         const validateUsername = (rule, value, callback) => {
             if (!validUsername(value)) {
-                callback(new Error("Please enter the correct user name"));
+                callback(new Error('Please enter the correct user name'));
             } else {
                 callback();
             }
@@ -84,7 +83,7 @@ export default {
         const validatePassword = (rule, value, callback) => {
             if (value.length < 6) {
                 callback(
-                    new Error("The password can not be less than 6 digits")
+                    new Error('The password can not be less than 6 digits')
                 );
             } else {
                 callback();
@@ -92,27 +91,27 @@ export default {
         };
         return {
             loginForm: {
-                username: "admin",
-                password: "111111",
+                username: '',
+                password: '',
             },
             loginRules: {
                 username: [
                     {
                         required: true,
-                        trigger: "blur",
+                        trigger: 'blur',
                         validator: validateUsername,
                     },
                 ],
                 password: [
                     {
                         required: true,
-                        trigger: "blur",
+                        trigger: 'blur',
                         validator: validatePassword,
                     },
                 ],
             },
             loading: false,
-            passwordType: "password",
+            passwordType: 'password',
             redirect: undefined,
         };
     },
@@ -126,32 +125,69 @@ export default {
     },
     methods: {
         showPwd() {
-            if (this.passwordType === "password") {
-                this.passwordType = "";
+            if (this.passwordType === 'password') {
+                this.passwordType = '';
             } else {
-                this.passwordType = "password";
+                this.passwordType = 'password';
             }
             this.$nextTick(() => {
                 this.$refs.password.focus();
             });
         },
+
         handleLogin() {
             this.$refs.loginForm.validate((valid) => {
                 if (valid) {
                     this.loading = true;
-                    this.$store
-                        .dispatch("user/login", this.loginForm)
-                        .then(() => {
-                            this.$router.push({ path: this.redirect || "/" });
+
+                    login({
+                        name: this.loginForm.username,
+                        password: this.loginForm.password,
+                    }).then((jsonResult) => {
+                        console.log(jsonResult);
+                        if (jsonResult.code == 200) {
+                            this.$store.commit(
+                                'user/SET_USER_ID',
+                                jsonResult.data.id
+                            );
+                            this.$store.commit(
+                                'user/SET_USER_INFO',
+                                jsonResult.data
+                            );
                             this.loading = false;
-                        })
-                        .catch(() => {
+
+                            localStorage.setItem('hasFresh', '0');
+
+                            this.$router.push({ path: this.redirect || '/' });
+                        }
+                        if (jsonResult.code == 505) {
+                            this.$message({
+                                message: '用户不存在',
+                                type: 'warning',
+                            });
                             this.loading = false;
-                        });
+                        }
+                    });
+
+                    // this.$store
+                    //     .dispatch("user/login", this.loginForm)
+                    //     .then(() => {
+                    //         this.$router.push({ path: this.redirect || "/" });
+                    //         this.loading = false;
+                    //     })
+                    //     .catch(() => {
+                    //         this.loading = false;
+                    //     });
                 } else {
-                    console.log("error submit!!");
+                    console.log('error submit!!');
                     return false;
                 }
+            });
+        },
+
+        toRegistPage() {
+            this.$router.push({
+                path: '/register',
             });
         },
     },

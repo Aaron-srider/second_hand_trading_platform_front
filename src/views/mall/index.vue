@@ -20,27 +20,25 @@
         <el-container>
             <!-- 商品品类 -->
             <el-aside width="130px">
-                <div>
-                    <el-card class="box-card">
-                        <div
-                            style="
-                                margin-bottom: 10px;
-                                font-size: 20px;
-                                font-weight: bold;
-                            "
+                <div class="no-border gray-bg pd10 br10 mgt20">
+                    <div
+                        style="
+                            margin-bottom: 10px;
+                            font-size: 20px;
+                            font-weight: bold;
+                        "
+                    >
+                        商品分类
+                    </div>
+                    <div
+                        v-for="o in catagory"
+                        :key="o.id"
+                        style="margin-top: 5px; margin-bottom: 5px"
+                    >
+                        <a class="link" @click="searchCatagoryGoods(o.id)">
+                            {{ o.name }}</a
                         >
-                            商品分类
-                        </div>
-                        <div
-                            v-for="o in catagory"
-                            :key="o"
-                            style="margin-top: 5px; margin-bottom: 5px"
-                        >
-                            <a class="link" @click="searchCatagoryGoods(o.id)">
-                                {{ o.name }}</a
-                            >
-                        </div>
-                    </el-card>
+                    </div>
                 </div>
             </el-aside>
             <!-- 商品格子 -->
@@ -77,7 +75,7 @@
                                 justify-content: end;
                             "
                             ><el-pagination
-                                :pager-count="3"
+                                :pager-count="5"
                                 @current-change="handleCurrentChange"
                                 :current-page="pagination.pageNo"
                                 :page-size="pagination.pageSize"
@@ -90,7 +88,7 @@
                 <div>
                     <el-row
                         style="margin-bottom: 20px"
-                        v-for="(row, row_index) in goodsMatrix"
+                        v-for="row in goodsMatrix"
                         v-bind:key="row.id"
                     >
                         <el-col
@@ -101,13 +99,22 @@
                             :key="goods.id"
                             :offset="index > 0 ? 1 : 0"
                         >
-                            <el-card :body-style="{ padding: '0px' }">
+                            <el-card
+                                :body-style="{ padding: '0px' }"
+                                shadow="never"
+                                style="
+                                    background-color: #f7f9fa;
+                                    border-radius: 15px;
+                                    border: 0;
+                                "
+                            >
                                 <!-- 商品图片 -->
                                 <div>
-                                    <img
-                                        src="data:image/png;base64,"
-                                        style="height: 240px; width: 100%"
-                                    />
+                                    <a href="#" @click="jump2detail(goods.id)"
+                                        ><img
+                                            src="data:image/png;base64,"
+                                            style="height: 240px; width: 100%"
+                                    /></a>
                                 </div>
 
                                 <!-- 商品简介 -->
@@ -300,12 +307,22 @@ export default {
      * 页面加载自动刷新（初始页面：1，初始页面大小：10）
      */
     created() {
+        if (localStorage.getItem('hasFresh') == '0') {
+            this.$router.go(0);
+        }
+        localStorage.setItem('hasFresh', '1');
         this.doQueryGoodsPage();
     },
     components: {
         SearchInput,
     },
     methods: {
+        jump2detail(goodsId) {
+            this.$router.push({
+                path: '/mall/goodsDetail',
+                query: { goodsId },
+            });
+        },
         fetchGoodsPage(pageSize, pageNo, searchGoodsName, sortPolicy) {
             getPagedGoodsList(
                 pageSize,
@@ -384,9 +401,16 @@ export default {
                     let goods = this.goodsList.find(
                         (goods) => goods.id == goods_id
                     );
-                    let base64Pic = goods.picList[0].base64Str;
-                    let $img = $(`[goods-id=${goods_id}] img`);
-                    $img.attr('src', `data:image/png;base64,${base64Pic}`);
+                    if (goods.picList) {
+                        let base64Pic = goods.picList[0].base64Str;
+                        let $img = $(`[goods-id=${goods_id}] img`);
+                        console.log('render img:', goods_id);
+                        $img.attr('src', `data:image/png;base64,${base64Pic}`);
+                    }
+                    // let base64Pic = goods.picList[0].base64Str;
+                    // let $img = $(`[goods-id=${goods_id}] img`);
+                    // console.log("render img:", goods_id)
+                    // $img.attr('src', `data:image/png;base64,${base64Pic}`);
                 });
             });
         },
@@ -461,6 +485,7 @@ export default {
 </script>
 
 <style lang="css" scoped>
+@import '../../styles/common-style.css';
 .link:hover {
     text-decoration: underline;
     color: red;

@@ -163,3 +163,7 @@ export function processCatch(error) {
         );
     }
 }
+
+export function getRouterParams() {
+    return JSON.parse(localStorage.getItem('routerParams'));
+}
